@@ -47,7 +47,7 @@ public class BaseGunState : BasePlayerState
          _pSm.thisTransform.forward = new Vector3(_pSm.fireJoyStick.Direction.x,0,_pSm.fireJoyStick.Direction.y);
          _pSm.characterController.Move(_charMovement.normalized * (Time.deltaTime * _pSm.gunSpeed)+Vector3.down);
          
-         _animationDirection = _pSm.thisTransform.InverseTransformDirection(_pSm.fireJoyStick.Direction);
+         _animationDirection = _pSm.thisTransform.TransformDirection(_pSm.fireJoyStick.Direction);
          _pSm.animator.SetFloat("InputX", _animationDirection.x);
          _pSm.animator.SetFloat("InputY", _animationDirection.y);
       }
