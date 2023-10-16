@@ -1,4 +1,5 @@
 using UnityEngine;
+using DG.Tweening;
 using UnityEngine.Animations.Rigging;
 
 public class EnemyHealth : AbstractHealth
@@ -6,6 +7,8 @@ public class EnemyHealth : AbstractHealth
     [SerializeField] private ChainIKConstraint _damagePunch;
     [SerializeField] private Transform _head;
     [SerializeField] private float _aimPunch;
+    
+
    
 
     public override void Damage(float damage, int rigidbody, Vector3 direction, Vector3 point)

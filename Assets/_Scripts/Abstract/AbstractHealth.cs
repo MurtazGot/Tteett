@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
+using DG.Tweening;
 
 public class AbstractHealth : MonoBehaviour
 {
@@ -12,23 +13,29 @@ public class AbstractHealth : MonoBehaviour
     [SerializeField] protected float _damageForce;
     [SerializeField] protected List<Rigidbody> _rbs = new();
     [SerializeField] private List<RagdollData> _rigidbodyDatasTemp = new();
+    [SerializeField] private SkinnedMeshRenderer _skinnedMeshRenderer;
     protected float _currentHealth;
     protected Animator _animator;
     protected Transform _particleTransform;
     private Transform[] _goChild;
+    private Material _material;
+    private float _rim;
+    private bool _dead;
 
     private List<CharacterJoint> _characterJointsTemp = new();
 
     public virtual void Start()
     {
+        DOTween.Init();
+        _material = _skinnedMeshRenderer.materials[0];
         _goChild = GetComponentsInChildren<Transform>();
         _currentHealth = _health;
         _rbs = GetComponentsInChildren<Rigidbody>().ToList();
         _particleTransform = _particleSystem.transform;
         _animator = GetComponent<Animator>();
         _animator.enabled = true;
-        
-        for (int i=0; i < _rbs.Count; i++)
+
+        for (int i = 0; i < _rbs.Count; i++)
         {
             _rbs[i].transform.gameObject.AddComponent<DamageZone>().SetHealthController(this, i);
             var zev = new RagdollData();
@@ -39,6 +46,7 @@ public class AbstractHealth : MonoBehaviour
                 zev.joint = GetJointData(joint);
                 _characterJointsTemp.Add(joint);
             }
+
             _rigidbodyDatasTemp.Add(zev);
         }
 
@@ -51,6 +59,7 @@ public class AbstractHealth : MonoBehaviour
         {
             Destroy(rigid);
         }
+
         _characterJointsTemp.Clear();
         _rbs.Clear();
     }
@@ -81,32 +90,46 @@ public class AbstractHealth : MonoBehaviour
 
     public virtual void Dead(float damage, int rigidbody, Vector3 direction)
     {
-        _animator.enabled = false;
-        AddRagDoll();
-        _rigidbodyDatasTemp[rigidbody].rigidbodyData.rigidBody.AddForce(direction.normalized*_damageForce*damage, ForceMode.Impulse);
-        StartCoroutine(SetStatic());
+        if (!_dead)
+        {
+            _dead = true;
+            AddRagDoll();
+
+            _animator.enabled = false;
+            _rigidbodyDatasTemp[rigidbody].rigidbodyData.rigidBody
+                .AddForce(direction.normalized * _damageForce * damage, ForceMode.Impulse);
+            StartCoroutine(SetStatic());
+        }
     }
 
     private void AddRagDoll()
     {
-        for(int i=0; i< _rigidbodyDatasTemp.Count;i++)
+        for (int i = 0; i < _rigidbodyDatasTemp.Count; i++)
         {
-            Rigidbody rigid = _rigidbodyDatasTemp[i].transformRB.gameObject.AddComponent<Rigidbody>();
-            Debug.Log(_rigidbodyDatasTemp[i].transformRB + i.ToString());
+            if (!TryGetComponent<Rigidbody>(out var rigid))
+            {
+                Debug.Log(false);
+                rigid = _rigidbodyDatasTemp[i].transformRB.gameObject.AddComponent<Rigidbody>();
+            }
+
+            Debug.Log(true);
             _rigidbodyDatasTemp[i].rigidbodyData.rigidBody = rigid;
-            rigid.mass = _rigidbodyDatasTemp[i].rigidbodyData.mass;
-            rigid.angularDrag = _rigidbodyDatasTemp[i].rigidbodyData.angularDrag;
-            rigid.useGravity = true;
-            rigid.isKinematic = false;
-            rigid.detectCollisions = true;
-          
-            if (_rigidbodyDatasTemp[i].joint !=null && _rigidbodyDatasTemp[i].joint.needJoint)
+            if (rigid != null)
+            {
+                rigid.mass = _rigidbodyDatasTemp[i].rigidbodyData.mass;
+                rigid.angularDrag = _rigidbodyDatasTemp[i].rigidbodyData.angularDrag;
+                rigid.useGravity = true;
+                rigid.isKinematic = false;
+                rigid.detectCollisions = true;
+            }
+
+            if (_rigidbodyDatasTemp[i].joint != null && _rigidbodyDatasTemp[i].joint.needJoint)
             {
                 var joi = _rigidbodyDatasTemp[i].transformRB.gameObject.AddComponent<CharacterJoint>();
                 _rigidbodyDatasTemp[i].joint.characterJoint = joi;
                 joi.connectedBody = _rigidbodyDatasTemp[i].joint.connectedBody.GetComponent<Rigidbody>();
                 joi.axis = _rigidbodyDatasTemp[i].joint.axis;
-                joi.connectedAnchor =_rigidbodyDatasTemp[i].joint.connectedAncor; 
+                joi.connectedAnchor = _rigidbodyDatasTemp[i].joint.connectedAncor;
                 joi.swingAxis = _rigidbodyDatasTemp[i].joint.swingAxis;
                 SoftJointLimit limit = default;
                 limit.limit = _rigidbodyDatasTemp[i].joint.lowTwistLimitSpring;
@@ -121,17 +144,21 @@ public class AbstractHealth : MonoBehaviour
 
     public virtual IEnumerator SetStatic()
     {
+
         yield return new WaitForSeconds(5f);
+        _material.SetColor("_FlatRimColor", Color.black);
         foreach (var rb in _rigidbodyDatasTemp)
         {
-            if (rb.joint!=null)
-              Destroy(rb.joint.characterJoint);
+            if (rb.joint != null)
+                Destroy(rb.joint.characterJoint);
             Destroy(rb.rigidbodyData.rigidBody);
         }
+
         foreach (var go in _goChild)
         {
             go.gameObject.isStatic = true;
         }
+
         gameObject.isStatic = true;
         _rigidbodyDatasTemp.Clear();
     }
@@ -144,7 +171,6 @@ public class AbstractHealth : MonoBehaviour
         return rbd;
     }
 
-   
 
     private JointData GetJointData(CharacterJoint joint)
     {
@@ -159,14 +185,15 @@ public class AbstractHealth : MonoBehaviour
         data.swingOneLimitLimitSpring = joint.swing1Limit.limit;
         return data;
     }
-    
+
     [Serializable]
     private class RagdollData
     {
-        public Transform transformRB ;
+        public Transform transformRB;
         public JointData joint;
         public RigidbodyData rigidbodyData;
     }
+
     [Serializable]
     private class RigidbodyData
     {
@@ -174,13 +201,17 @@ public class AbstractHealth : MonoBehaviour
         public float mass;
         public float angularDrag;
     }
+
     [Serializable]
     private class JointData
     {
         public bool needJoint = false;
-        [FormerlySerializedAs("_characterJoint")] public CharacterJoint characterJoint;
+
+        [FormerlySerializedAs("_characterJoint")]
+        public CharacterJoint characterJoint;
+
         public Transform connectedBody;
-        public Vector3 axis, connectedAncor,swingAxis;
+        public Vector3 axis, connectedAncor, swingAxis;
         public float swingOneLimitLimitSpring, lowTwistLimitSpring, hightTwistLimitSpring;
     }
 }

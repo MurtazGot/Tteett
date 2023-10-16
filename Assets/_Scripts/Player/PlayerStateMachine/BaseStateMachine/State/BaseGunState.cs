@@ -44,7 +44,7 @@ public class BaseGunState : BasePlayerState
       {
          _charMovement = new Vector3(_pSm.movementJoyStick.Direction.x, 0, _pSm.movementJoyStick.Direction.y);
          _pSm.thisTransform.forward = _charMovement.normalized;
-         _pSm.characterController.Move(_charMovement.normalized * (Time.deltaTime * _pSm.gunSpeed));
+         _pSm.characterController.Move(_charMovement.normalized * (Time.deltaTime * _pSm.gunSpeed)+Vector3.down);
       }
       else
       {
