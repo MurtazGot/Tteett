@@ -180,7 +180,11 @@ PlayerSettings:
   iOSTargetOSVersionString: 13.0
   tvOSSdkVersion: 0
   tvOSRequireExtendedGameController: 0
+<<<<<<< HEAD
   tvOSTargetOSVersionString: 13.0
+=======
+  tvOSTargetOSVersionString: 12.0
+>>>>>>> e3cb61bea465aba5886fc86deddff6b263f22561
   uIPrerenderedIcon: 0
   uIRequiresPersistentWiFi: 0
   uIRequiresFullScreen: 1
@@ -837,7 +841,7 @@ PlayerSettings:
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
-    Android: 1
+    Android: 0
   il2cppCompilerConfiguration: {}
   il2cppCodeGeneration: {}
   managedStrippingLevel:
