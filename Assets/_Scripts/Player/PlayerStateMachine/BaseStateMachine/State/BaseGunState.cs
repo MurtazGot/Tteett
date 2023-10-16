@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class BaseGunState : BasePlayerState
 {
-   private Vector3 _charMovement;
+   private Vector3 _charMovement, _animationDirection;
    private BasePlayerControllerSm _pSm;
    public BaseGunState(BasePlayerControllerSm stateMachine) : base("BaseGunState", stateMachine)
    {
@@ -29,6 +29,7 @@ public class BaseGunState : BasePlayerState
       {
          _pSm.animator.SetBool("Fire", false);
       }
+     
    }
 
    public override void UpdatePhysics()
@@ -43,12 +44,18 @@ public class BaseGunState : BasePlayerState
       if (_pSm.movementJoyStick.Direction != Vector2.zero)
       {
          _charMovement = new Vector3(_pSm.movementJoyStick.Direction.x, 0, _pSm.movementJoyStick.Direction.y);
-         _pSm.thisTransform.forward = _charMovement.normalized;
+         _pSm.thisTransform.forward = new Vector3(_pSm.fireJoyStick.Direction.x,0,_pSm.fireJoyStick.Direction.y);
          _pSm.characterController.Move(_charMovement.normalized * (Time.deltaTime * _pSm.gunSpeed)+Vector3.down);
+         
+         _animationDirection = _pSm.thisTransform.InverseTransformDirection(_pSm.fireJoyStick.Direction);
+         _pSm.animator.SetFloat("InputX", _animationDirection.x);
+         _pSm.animator.SetFloat("InputY", _animationDirection.y);
       }
       else
       {
+         _pSm.thisTransform.forward = new Vector3(_pSm.fireJoyStick.Direction.x,0,_pSm.fireJoyStick.Direction.y);
          _pSm.animator.SetFloat("InputY", 0);
+         _pSm.animator.SetFloat("InputX", 0);
       }
    }
 }
